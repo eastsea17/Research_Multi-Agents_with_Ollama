@@ -12,33 +12,37 @@ An automated system that leverages **OpenAlex API** for real-time literature rev
 
 ## ✨ Key Features
 
-- **🔍 Smart Query Optimization**: Automatically converts natural language research intents into optimized search queries using LLM-powered phrase extraction.
-- **📚 Real-time Literature Review**: Fetches papers from **OpenAlex** (2020+) based on optimized keyword phrases.
-- **🔄 Iterative Refinement Loop**:
-  - **Generator**: Uses **DeepSeek V3 (671B)** for idea generation with Chain of Thought reasoning.
+- **🔍 Smart Query Optimization**: Converts natural language intents into optimized search queries with exact phrase matching.
+- **🔄 Keyword Combination Fallback**: When initial search returns <10 papers, automatically selects the best 2-keyword combination using LLM to expand the paper pool.
+- **📚 Real-time Literature Review**: Fetches papers from **OpenAlex** (2020+) with deduplication.
+- **🤖 Multi-Agent Pipeline**:
+  - **Generator**: Uses **DeepSeek V3 (671B)** for idea generation with Chain of Thought.
   - **Critic**: Uses **GPT-OSS (120B)** to evaluate on Novelty, Feasibility, Specificity, and Impact.
   - **Refiner**: Uses **GPT-OSS (120B)** to improve ideas based on critique feedback.
 - **☁️ Hybrid Operation**: Supports both **Local Ollama** and **Ollama Cloud**.
-- **📊 Rich Reports**: Auto-generates **Markdown** and **HTML** reports with full evolution history.
+- **📊 Rich Reports**: Auto-generates **Markdown** and **HTML** reports.
 
 ## 🏗️ System Architecture
 
 ```mermaid
 graph LR
-    A[Natural Language Query] --> B[Query Optimizer LLM]
-    B --> C[Optimized Phrases]
-    C --> D[OpenAlex API]
-    D --> E[Top-K Papers]
-    E --> F[Generator Agent]
-    F --> G[Draft Ideas]
-    G --> H[Critic Agent]
-    H --> I{Score >= 3.0?}
-    I -->|Yes| J[Accepted]
-    I -->|2.0 - 3.0| K[Refiner Agent]
-    I -->|< 2.0| L[Rejected]
-    K --> G
-    J --> M[Markdown Report]
-    M --> N[HTML Report]
+    A[Natural Language Query] --> B[Query Optimizer]
+    B --> C[3+ Keywords]
+    C --> D[OpenAlex Search]
+    D --> E{Papers >= 10?}
+    E -->|Yes| G[Top-K Selection]
+    E -->|No| F[LLM Selects Best 2 Keywords]
+    F --> H[Secondary Search]
+    H --> I[Merge & Deduplicate]
+    I --> G
+    G --> J[Generator Agent]
+    J --> K[Critic Agent]
+    K --> L{Score >= 3.0?}
+    L -->|Yes| M[Accepted]
+    L -->|2.0 - 3.0| N[Refiner Agent]
+    L -->|< 2.0| O[Rejected]
+    N --> K
+    M --> P[Reports]
 ```
 
 ## 📁 Project Structure
@@ -46,7 +50,7 @@ graph LR
 ```text
 ├── agents/                     # Agent Modules
 │   ├── base_agent.py           # Base agent class
-│   ├── generator.py            # Query optimization + Idea generation
+│   ├── generator.py            # Query optimization + Fallback + Idea generation
 │   ├── critic.py               # Evaluation logic
 │   └── refiner.py              # Refinement logic
 ├── core/                       # Core Infrastructure
@@ -85,42 +89,29 @@ pip install pyyaml requests
 
 ### Configuration
 
-The system is fully configurable via `config.yaml`.
-
 ```yaml
-project:
-  name: "Multi-agent based Research Topic Ideation System"
-  version: "1.0"
-
-ollama:
-  base_url: "http://localhost:11434"  # Local Ollama
-  cloud_url: "http://localhost:11434" # Ollama Cloud endpoint
-
 openalex:
-  fetch_limit: 500        # REQUIRED: Number of papers to fetch
-  top_k_papers: 10        # REQUIRED: Top papers for context
+  fetch_limit: 200        # Papers to fetch per query
+  top_k_papers: 10        # Top papers for context
 
 agent_models:
   generator:
     provider: "ollama-cloud"
     model: "deepseek-v3.1:671b-cloud"
     temperature: 0.5
-    system_prompt_path: "./prompts/generator.txt"
 
   critic:
     provider: "ollama-cloud"
     model: "gpt-oss:120b-cloud"
     temperature: 0.5
-    system_prompt_path: "./prompts/critic.txt"
 
   refiner:
     provider: "ollama-cloud"
     model: "gpt-oss:120b-cloud"
     temperature: 0.5
-    system_prompt_path: "./prompts/refiner.txt"
 
 loop_settings:
-  max_iterations: 2
+  max_iterations: 1
   num_ideas: 3
   score_threshold: 3.0
   drop_threshold: 2.0
@@ -128,25 +119,20 @@ loop_settings:
 
 ### Usage
 
-You can now input **natural language research intents** instead of simple keywords:
+Input **natural language research intents**:
 
 ```bash
-# Natural language query (automatically optimized)
-python main.py --keyword "I want to improve the methodology for analyzing competitive relationships between companies by applying patent network analysis."
-
-# Simple keyword also works
-python main.py --keyword "transformer anomaly detection manufacturing"
+python main.py --keyword "I would like to advance my research on preventing thermal runaway in LFP-based ESS systems."
 ```
 
-**Query Optimization Example:**
+**Example Output:**
 
-- Input: `"I want to study deep learning for battery life prediction"`
-- Optimized: `"deep learning" "battery life prediction"`
-
-Override iteration count:
-
-```bash
-python main.py --keyword "Generative Design in Architecture" --loops 5
+```
+[generator] Optimized Query: '"thermal runaway prevention" "lithium iron phosphate" "energy storage systems"'
+[generator] Found 5 papers from OpenAlex.
+[generator] Found only 5 papers. Attempting keyword combination fallback...
+[generator] Fallback Query: '"thermal runaway prevention" "lithium iron phosphate"'
+[generator] After fallback: 15 unique papers in pool.
 ```
 
 ## 📊 Output

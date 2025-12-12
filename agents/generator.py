@@ -84,7 +84,42 @@ OPTIMIZED QUERY:"""
             optimized_query = raw_query.replace('```', '').strip()
         
         print(f"[{self.role}] Optimized Query: '{optimized_query}'")
-        return optimized_query
+        return optimized_query, keywords  # Return both query and keywords list
+
+    def select_best_keyword_pair(self, keywords: List[str], user_input: str) -> str:
+        """
+        3개 이상의 키워드 중에서 사용자 의도에 가장 부합하는 2개의 키워드를 선택합니다.
+        LLM을 사용하여 문맥과 의도를 분석합니다.
+        """
+        if len(keywords) < 3:
+            return " ".join([f'"{k}"' for k in keywords])
+        
+        keywords_str = ", ".join([f'"{k}"' for k in keywords])
+        
+        prompt = f"""
+You are selecting the 2 most important keywords for academic paper search.
+
+USER_INTENT: "{user_input}"
+AVAILABLE_KEYWORDS: {keywords_str}
+
+RULES:
+1. Select exactly 2 keywords that best capture the user's research intent.
+2. Prioritize keywords that are most specific to the research topic.
+3. Output ONLY the 2 selected keywords in double quotes, separated by space.
+
+SELECTED KEYWORDS:"""
+        
+        raw_response = self.generate(prompt).strip()
+        
+        # Extract quoted keywords from response
+        selected = re.findall(r'"([^"]*)"', raw_response)
+        if len(selected) >= 2:
+            return f'"{selected[0]}" "{selected[1]}"'
+        elif len(selected) == 1:
+            return f'"{selected[0]}"'
+        else:
+            # Fallback: use first 2 keywords
+            return f'"{keywords[0]}" "{keywords[1]}"'
     
     def fetch_papers_from_openalex(self, keyword: str, limit: int = 100) -> List[Dict[str, Any]]:
         """
@@ -193,13 +228,31 @@ OPTIMIZED QUERY:"""
         """
         
         # Step 1: Fetch papers from OpenAlex
-        search_query = self.refine_search_query(keyword)
+        search_query, keywords = self.refine_search_query(keyword)
         papers = self.fetch_papers_from_openalex(search_query, limit=self.fetch_limit)
         
+        # Step 1.5: Fallback - expand paper pool if too few results and 3+ keywords
+        min_paper_threshold = 10
+        if len(papers) < min_paper_threshold and len(keywords) >= 3:
+            print(f"[{self.role}] Found only {len(papers)} papers. Attempting keyword combination fallback...")
+            
+            # Select best 2 keywords based on user intent
+            reduced_query = self.select_best_keyword_pair(keywords, keyword)
+            print(f"[{self.role}] Fallback Query: '{reduced_query}'")
+            
+            # Fetch additional papers with reduced query
+            additional_papers = self.fetch_papers_from_openalex(reduced_query, limit=self.fetch_limit)
+            
+            # Merge and deduplicate by title
+            existing_titles = {p['title'].lower() for p in papers}
+            for paper in additional_papers:
+                if paper['title'].lower() not in existing_titles:
+                    papers.append(paper)
+                    existing_titles.add(paper['title'].lower())
+            
+            print(f"[{self.role}] After fallback: {len(papers)} unique papers in pool.")
+        
         # Step 2: Select top relevant papers
-        # 논문 선별 시에는 원래 사용자의 의도(keyword)와 얼마나 관련있는지 보는게 좋으므로
-        # _select_top_papers에는 원래 keyword(문장)를 넘겨도 좋지만, 
-        # 단순 매칭을 위해 search_query를 넘기는 것이 더 안전할 수 있습니다.
         top_papers = self._select_top_papers(papers, search_query, top_k=self.top_k_papers)
         
         print(f"[{self.role}] Top {len(top_papers)} Relevant Papers:")
