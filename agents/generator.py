@@ -73,10 +73,15 @@ USER_INPUT: "{user_input}"
 
 OPTIMIZED QUERY:"""
         
-        optimized_query = self.generate(prompt).strip()
+        raw_query = self.generate(prompt).strip()
         
-        # Clean up any markdown or extra formatting
-        optimized_query = optimized_query.replace('```', '').strip()
+        # 안전장치: 정규표현식으로 "키워드" 형태만 추출하여 재조립
+        # LLM이 "Here is the optimized query: ..." 같은 사족을 붙일 경우 대비
+        keywords = re.findall(r'"([^"]*)"', raw_query)
+        if keywords:
+            optimized_query = " ".join([f'"{k}"' for k in keywords])
+        else:
+            optimized_query = raw_query.replace('```', '').strip()
         
         print(f"[{self.role}] Optimized Query: '{optimized_query}'")
         return optimized_query
@@ -167,7 +172,7 @@ OPTIMIZED QUERY:"""
             year = paper.get('year', 'N/A')
             title = paper.get('title', 'Unknown')
             authors = ', '.join(paper.get('authors', [])[:3])  # First 3 authors
-            abstract = paper.get('abstract', '')[:200]  # Truncated to 200 chars
+            abstract = paper.get('abstract', '')[:1000]  # Truncated to 200 chars
             citations = paper.get('cited_by_count', 0)
             
             formatted.append(f"""

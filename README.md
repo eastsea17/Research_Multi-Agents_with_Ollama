@@ -12,30 +12,33 @@ An automated system that leverages **OpenAlex API** for real-time literature rev
 
 ## ✨ Key Features
 
-- **📚 Real-time Literature Review**: Automatically fetches the latest papers from **OpenAlex** based on keywords (Strict config validation).
+- **🔍 Smart Query Optimization**: Automatically converts natural language research intents into optimized search queries using LLM-powered phrase extraction.
+- **📚 Real-time Literature Review**: Fetches papers from **OpenAlex** (2020+) based on optimized keyword phrases.
 - **🔄 Iterative Refinement Loop**:
-  - **Generator**: Uses **DeepSeek V3 (671B)** for high-level idea generation using Chain of Thought.
-  - **Critic**: Uses **GPT-OSS (120B)** to evaluate ideas on Novelty, Feasibility, Specificity, and Impact.
-  - **Refiner**: Uses **GPT-OSS (120B)** to improve ideas based on specific critique feedback.
-- **☁️ Hybrid Operation**: Supports both **Local Ollama** (privacy/cost) and **Ollama Cloud** (performance).
-- **📊 Rich Reports**: Auto-generates detailed **Markdown** and **HTML** reports with evolution history.
+  - **Generator**: Uses **DeepSeek V3 (671B)** for idea generation with Chain of Thought reasoning.
+  - **Critic**: Uses **GPT-OSS (120B)** to evaluate on Novelty, Feasibility, Specificity, and Impact.
+  - **Refiner**: Uses **GPT-OSS (120B)** to improve ideas based on critique feedback.
+- **☁️ Hybrid Operation**: Supports both **Local Ollama** and **Ollama Cloud**.
+- **📊 Rich Reports**: Auto-generates **Markdown** and **HTML** reports with full evolution history.
 
 ## 🏗️ System Architecture
 
 ```mermaid
 graph LR
-    A[Keyword] -->|Fetch Limit| B[OpenAlex API]
-    B -->|Top-K Selection| C[Context]
-    C --> D[Generator Agent]
-    D --> E[Draft Ideas]
-    E --> F[Critic Agent]
-    F --> G{Score >= Threshold?}
-    G -->|Yes| H[Accepted]
-    G -->|No, >= Drop| I[Refiner Agent]
-    G -->|No, < Drop| J[Rejected]
-    I --> E
-    H --> K[Markdown Report]
-    K --> L[HTML Report]
+    A[Natural Language Query] --> B[Query Optimizer LLM]
+    B --> C[Optimized Phrases]
+    C --> D[OpenAlex API]
+    D --> E[Top-K Papers]
+    E --> F[Generator Agent]
+    F --> G[Draft Ideas]
+    G --> H[Critic Agent]
+    H --> I{Score >= 3.0?}
+    I -->|Yes| J[Accepted]
+    I -->|2.0 - 3.0| K[Refiner Agent]
+    I -->|< 2.0| L[Rejected]
+    K --> G
+    J --> M[Markdown Report]
+    M --> N[HTML Report]
 ```
 
 ## 📁 Project Structure
@@ -43,12 +46,12 @@ graph LR
 ```text
 ├── agents/                     # Agent Modules
 │   ├── base_agent.py           # Base agent class
-│   ├── generator.py            # Idea generation (OpenAlex integrated)
+│   ├── generator.py            # Query optimization + Idea generation
 │   ├── critic.py               # Evaluation logic
 │   └── refiner.py              # Refinement logic
 ├── core/                       # Core Infrastructure
 │   ├── model_manager.py        # Model loading & Cloud/Local management
-│   ├── mcp_client.py           # OpenAlex context fetching
+│   ├── mcp_client.py           # Context fetching
 │   └── types.py                # Data types (IdeaObject, etc.)
 ├── prompts/                    # System Prompts
 │   ├── generator.txt           # CoT + Critic-Solution Prompt
@@ -83,7 +86,6 @@ pip install pyyaml requests
 ### Configuration
 
 The system is fully configurable via `config.yaml`.
-**Note:** `openalex` settings are strictly enforced.
 
 ```yaml
 project:
@@ -95,26 +97,26 @@ ollama:
   cloud_url: "http://localhost:11434" # Ollama Cloud endpoint
 
 openalex:
-  fetch_limit: 200        # REQUIRED: Number of papers to fetch
+  fetch_limit: 500        # REQUIRED: Number of papers to fetch
   top_k_papers: 10        # REQUIRED: Top papers for context
 
 agent_models:
   generator:
     provider: "ollama-cloud"
     model: "deepseek-v3.1:671b-cloud"
-    temperature: 0.8
+    temperature: 0.5
     system_prompt_path: "./prompts/generator.txt"
 
   critic:
     provider: "ollama-cloud"
     model: "gpt-oss:120b-cloud"
-    temperature: 0.3
+    temperature: 0.5
     system_prompt_path: "./prompts/critic.txt"
 
   refiner:
     provider: "ollama-cloud"
     model: "gpt-oss:120b-cloud"
-    temperature: 0.3
+    temperature: 0.5
     system_prompt_path: "./prompts/refiner.txt"
 
 loop_settings:
@@ -126,11 +128,20 @@ loop_settings:
 
 ### Usage
 
-Run the agent with a research keyword:
+You can now input **natural language research intents** instead of simple keywords:
 
 ```bash
-python main.py --keyword "AI based technology intelligence"
+# Natural language query (automatically optimized)
+python main.py --keyword "I want to improve the methodology for analyzing competitive relationships between companies by applying patent network analysis."
+
+# Simple keyword also works
+python main.py --keyword "transformer anomaly detection manufacturing"
 ```
+
+**Query Optimization Example:**
+
+- Input: `"I want to study deep learning for battery life prediction"`
+- Optimized: `"deep learning" "battery life prediction"`
 
 Override iteration count:
 
