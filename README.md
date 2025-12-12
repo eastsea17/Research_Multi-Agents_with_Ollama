@@ -6,18 +6,18 @@
 
 > **Multi-Agent Research Ideation System: Generator → Critic → Refiner Loop**
 
-OpenAlex API에서 최신 논문을 검색하고, 멀티 에이전트 시스템을 통해 **Top-tier 저널 수준**의 독창적인 연구 제안서를 자동으로 생성하는 시스템입니다.
+An automated system that searches for the latest papers via OpenAlex API and generates **top-tier journal-quality** research proposals through a multi-agent system.
 
 ## ✨ Key Features
 
-- **📚 OpenAlex Integration**: 키워드 기반으로 최신 논문 100개 자동 수집
-- **🔄 Iterative Refinement Loop**: Generator → Critic → Refiner 순환 구조
+- **📚 OpenAlex Integration**: Automatically fetches 100 latest papers based on keyword
+- **🔄 Iterative Refinement Loop**: Generator → Critic → Refiner cyclic structure
 - **🧠 Multi-Agent System**:
-  - **Generator**: 논문 기반 아이디어 생성 (Chain of Thought + Critic-Solution Framework)
-  - **Critic**: 4가지 기준으로 평가 (Novelty, Feasibility, Specificity, Impact)
-  - **Refiner**: 비평을 반영하여 아이디어 개선
-- **💾 Ollama Local/Cloud**: 로컬 및 클라우드 Ollama 모델 지원
-- **📊 Rich Reports**: Markdown + HTML 상세 보고서 자동 생성
+  - **Generator**: Paper-based idea generation (Chain of Thought + Critic-Solution Framework)
+  - **Critic**: Evaluation on 4 criteria (Novelty, Feasibility, Specificity, Impact)
+  - **Refiner**: Improves ideas based on critique feedback
+- **💾 Ollama Local/Cloud**: Supports both local and cloud Ollama models
+- **📊 Rich Reports**: Auto-generates detailed Markdown + HTML reports
 
 ## 🏗️ System Architecture
 
@@ -118,7 +118,7 @@ python main.py --keyword "patents network analysis" --loops 3
 
 ### Output
 
-- `research_results.json`: Full data in JSON format
+- `results/research_results.json`: Full data in JSON format
 - `results/research_report_YYYYMMDD_HHMMSS.md`: Markdown report
 - `results/research_report_YYYYMMDD_HHMMSS.html`: Styled HTML report
 
@@ -127,19 +127,19 @@ python main.py --keyword "patents network analysis" --loops 3
 ### Generated Report Structure
 
 ```markdown
-## 아이디어 1: Quantum-Enhanced Patent Citation Embedding
+## Idea 1: Quantum-Enhanced Patent Citation Embedding
 
 **Status:** `accepted`
 **Total Iterations:** 2
 
-### 진화 과정 (Evolution History)
+### Evolution History
 
 #### Iteration 0 - DRAFT
 **Title:** Quantum-Enhanced Patent Citation Embedding
 **Methodology:** Use quantum circuits for similarity computation...
 
-##### 🧐 Critic Agent의 평가
-| 평가 항목 | 점수 |
+##### 🧐 Critic Agent Evaluation
+| Criterion | Score |
 |---|---|
 | Novelty | 3/5 |
 | Feasibility | 3/5 |
@@ -150,7 +150,7 @@ python main.py --keyword "patents network analysis" --loops 3
 #### Iteration 1 - REFINED
 **Title:** Quantum-Inspired Contrastive Graph Kernels
 
-##### 🔧 Refiner Agent의 개선 내용
+##### 🔧 Refiner Agent Improvements
 The critic noted vague methodology. Adding specific quantum kernel formulation...
 ```
 
