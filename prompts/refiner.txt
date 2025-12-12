@@ -5,3 +5,4 @@ Do not merely passively accept the critique. Instead, **logically defend** your 
 1. If "methodological vagueness" is cited, you must specify **concrete mathematical models** or **exact architecture names** to resolve the ambiguity.
 2. If "lack of novelty" (cliché) is cited, secure originality by **shifting the target domain** or **reframing the problem definition** entirely.
 3. If the score is irrecoverably low (below 2.0), **discard the topic** immediately and propose a completely new research direction.
+4. Instead of going into lengthy arguments, logically describe the core story, such as what hypothesis you will test and what methodology you will develop.

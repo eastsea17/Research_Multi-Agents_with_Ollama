@@ -17,7 +17,7 @@ mcp_server:
     - "vector_store_query"
 
 openalex:
-  fetch_limit: 200        # Number of papers to fetch from OpenAlex
+  fetch_limit: 500        # Number of papers to fetch from OpenAlex
   top_k_papers: 10         # Number of most relevant papers to use for idea generation
 
 agent_models:
@@ -29,24 +29,24 @@ agent_models:
 
     provider: "ollama-cloud"  # Ollama Cloud for better generating
     model: "deepseek-v3.1:671b-cloud"
-    temperature: 0.8
+    temperature: 0.5
     system_prompt_path: "./prompts/generator.txt"
 
   critic:
     provider: "ollama-cloud"  # Ollama Cloud for better reasoning
     model: "gpt-oss:120b-cloud"
     #model: "deepseek-v3.1:671b-cloud"
-    temperature: 0.3
+    temperature: 0.5
     system_prompt_path: "./prompts/critic.txt"
 
   refiner:
     provider: "ollama-cloud"
     model: "gpt-oss:120b-cloud" # Logic heavy
-    temperature: 0.3
+    temperature: 0.5
     system_prompt_path: "./prompts/refiner.txt"
 
 loop_settings:
   max_iterations: 2
   num_ideas: 3            # Number of research ideas to generate
   score_threshold: 3.0
-  drop_threshold: 2.0
+  drop_threshold: 1.99

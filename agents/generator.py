@@ -42,6 +42,44 @@ class GeneratorAgent(BaseAgent):
             
         self.fetch_limit = openalex_config["fetch_limit"]
         self.top_k_papers = openalex_config["top_k_papers"]
+
+    def refine_search_query(self, user_input: str) -> str:
+        """
+        사용자의 구체적인 문장을 OpenAlex 검색에 최적화된 검색식으로 변환합니다.
+        핵심 키워드를 인용부호로 감싸서 정확한 구문 매칭을 수행합니다.
+        """
+        print(f"[{self.role}] Optimizing search query for: '{user_input}'...")
+        
+        prompt = f"""
+You are a search query optimizer for an academic database (OpenAlex).
+Convert the USER_INPUT into keyword phrases for academic paper search.
+
+RULES:
+1. Extract 2-4 core technical concepts (not individual words).
+2. Wrap each concept in double quotes for exact phrase matching.
+3. Separate phrases with spaces (no AND/OR operators).
+4. Remove stop words (I want to, study about, etc.).
+5. Convert to English if the input is in another language.
+6. Output ONLY the query string, no explanation.
+
+EXAMPLES:
+USER_INPUT: "I want to improve the methodology for analyzing competitive relationships between companies by applying patent network analysis."
+OPTIMIZED QUERY: "patent network" "competitive analysis"
+
+USER_INPUT: "딥러닝을 활용한 배터리 수명 예측 연구"
+OPTIMIZED QUERY: "deep learning" "battery life prediction"
+
+USER_INPUT: "{user_input}"
+
+OPTIMIZED QUERY:"""
+        
+        optimized_query = self.generate(prompt).strip()
+        
+        # Clean up any markdown or extra formatting
+        optimized_query = optimized_query.replace('```', '').strip()
+        
+        print(f"[{self.role}] Optimized Query: '{optimized_query}'")
+        return optimized_query
     
     def fetch_papers_from_openalex(self, keyword: str, limit: int = 100) -> List[Dict[str, Any]]:
         """
@@ -53,8 +91,7 @@ class GeneratorAgent(BaseAgent):
         params = {
             "search": keyword,
             "per-page": min(limit, 200),  # OpenAlex max is 200 per page
-            "filter": "has_abstract:true",
-            "sort": "publication_year:desc"  # Get newest first
+            "filter": "has_abstract:true,from_publication_date:2020-01-01"
         }
         headers = {
             "User-Agent": f"mailto:{self.user_agent_email}"
@@ -111,21 +148,14 @@ class GeneratorAgent(BaseAgent):
     
     def _select_top_papers(self, papers: List[Dict], keyword: str, top_k: int = 10) -> List[Dict]:
         """
-        Select most relevant recent papers.
-        Prioritizes: recency (year) and citation count.
-        Reduced to 5 papers to keep prompt size manageable.
+        Select top-k papers from relevance-sorted results.
+        Since OpenAlex already returns results sorted by relevance,
+        we simply slice the first top_k papers.
         """
         if not papers:
             return []
         
-        # Sort by year (desc) then by citations (desc)
-        sorted_papers = sorted(
-            papers,
-            key=lambda x: (x.get('year', 0) or 0, x.get('cited_by_count', 0) or 0),
-            reverse=True
-        )
-        
-        return sorted_papers[:top_k]
+        return papers[:top_k]
     
     def _format_papers_for_prompt(self, papers: List[Dict]) -> str:
         """Format papers into a readable context for the LLM."""
@@ -158,10 +188,18 @@ class GeneratorAgent(BaseAgent):
         """
         
         # Step 1: Fetch papers from OpenAlex
-        papers = self.fetch_papers_from_openalex(keyword, limit=self.fetch_limit)
+        search_query = self.refine_search_query(keyword)
+        papers = self.fetch_papers_from_openalex(search_query, limit=self.fetch_limit)
         
         # Step 2: Select top relevant papers
-        top_papers = self._select_top_papers(papers, keyword, top_k=self.top_k_papers)
+        # 논문 선별 시에는 원래 사용자의 의도(keyword)와 얼마나 관련있는지 보는게 좋으므로
+        # _select_top_papers에는 원래 keyword(문장)를 넘겨도 좋지만, 
+        # 단순 매칭을 위해 search_query를 넘기는 것이 더 안전할 수 있습니다.
+        top_papers = self._select_top_papers(papers, search_query, top_k=self.top_k_papers)
+        
+        print(f"[{self.role}] Top {len(top_papers)} Relevant Papers:")
+        for i, paper in enumerate(top_papers, 1):
+             print(f"  {i}. {paper.get('title', 'Unknown')} ({paper.get('year', 'N/A')})")
         papers_context = self._format_papers_for_prompt(top_papers)
         
         # Build latest papers list for SOTA analysis
@@ -272,5 +310,9 @@ class GeneratorAgent(BaseAgent):
             idea.evolution_history.append(snapshot)
             ideas.append(idea)
         
+        print(f"[{self.role}] Generated Ideas:")
+        for i, idea in enumerate(ideas, 1):
+            print(f"  {i}. {idea.latest_content.title}")
+
         print(f"[{self.role}] Generated {len(ideas)} ideas.")
         return ideas
