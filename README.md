@@ -1,4 +1,4 @@
-# Multi-agent based Research Topic Ideation System 🔬
+# Multi-agents based Research Topic Ideation System 🔬
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Ollama](https://img.shields.io/badge/Ollama-Cloud%20Supported-orange.svg)](https://ollama.ai/)
