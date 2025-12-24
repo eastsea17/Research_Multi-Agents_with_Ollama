@@ -37,24 +37,24 @@ graph TD
     %% 노드 정의
     User(["👤 사용자 입력<br/>(연구 주제)"]):::user
     
-    subgraph System [멀티 에이전트 시스템]
+    subgraph System ["멀티 에이전트 시스템"]
         direction TB
         
         %% 1단계: 생성
-        subgraph P1 [1단계: 생성 (Generation)]
+        subgraph P1 ["1단계: 생성 (Generation)"]
             Generator("Generator Agent<br/>(계획 -> 검색 -> 초안 작성)"):::agent
             SearchTool("검색 도구<br/>(Tavily/MCP)"):::tool
             LLM1{"로컬 LLM<br/>(Ollama)"}:::tool
         end
         
         %% 2단계: 비평
-        subgraph P2 [2단계: 비평 (Critique)]
+        subgraph P2 ["2단계: 비평 (Critique)"]
             Critic("Critic Agent<br/>(검토 및 피드백)"):::agent
             LLM2{"로컬 LLM<br/>(Ollama)"}:::tool
         end
         
         %% 3단계: 정제
-        subgraph P3 [3단계: 정제 (Refinement)]
+        subgraph P3 ["3단계: 정제 (Refinement)"]
             Refiner("Refiner Agent<br/>(재작성 및 다듬기)"):::agent
             LLM3{"로컬 LLM<br/>(Ollama)"}:::tool
         end
