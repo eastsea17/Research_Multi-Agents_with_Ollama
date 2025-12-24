@@ -51,7 +51,7 @@ graph TD
 
     %% 3. Tools & Infrastructure Layer
     subgraph Tools_Infra [🛠️ Tools & Output]
-        Tavily[🔍 Search Tool<br/>Tavily / MCP]:::tool
+        OpenAlex[🔍 Search Tool<br/>OpenAlex API]:::tool
         Report[📄 Final Report<br/>HTML/Markdown]:::file
     end
 
@@ -67,8 +67,8 @@ graph TD
     Input -- "Initiate Task" --> Generator
 
     %% Phase 1: Generation
-    Generator -- "1. Search Query" --> Tavily
-    Tavily -- "Search Results" --> Generator
+    Generator -- "1. Search Query" --> OpenAlex
+    OpenAlex -- "Academic Papers" --> Generator
     Generator -- "Draft Content" --> LLM
     LLM -.-> Generator
     Generator -- "Initial Draft" --> Critic
