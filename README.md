@@ -28,52 +28,64 @@ An automated system that leverages **OpenAlex API** for real-time literature rev
 
 ```mermaid
 graph TD
-    %% Define Styles
-    classDef user fill:#f9f9f9,stroke:#333,stroke-width:2px,color:black;
-    classDef agent fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:black;
-    classDef tool fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5,color:black;
-    classDef output fill:#dcedc8,stroke:#558b2f,stroke-width:2px,color:black;
+    %% Style Definitions (Aligned with Reference)
+    classDef user fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000
+    classDef agent fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b,rx:10,ry:10
+    classDef tool fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,stroke-dasharray: 5 5
+    classDef ai fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#1b5e20
+    classDef file fill:#fff,stroke:#333,stroke-width:1px,color:#333,shape:document
 
-    %% Nodes
-    User(["👤 User Input<br/>(Research Topic)"]):::user
-    
-    subgraph System [Multi-Agent System]
-        direction TB
-        
-        %% Generator Phase
-        subgraph P1 [Phase 1: Generation]
-            Generator("Generator Agent<br/>(Plan -> Search -> Draft)"):::agent
-            SearchTool("Search Tool<br/>(Tavily/MCP)"):::tool
-            LLM1{"Local LLM<br/>(Ollama)"}:::tool
-        end
-        
-        %% Critic Phase
-        subgraph P2 [Phase 2: Critique]
-            Critic("Critic Agent<br/>(Review & Feedback)"):::agent
-            LLM2{"Local LLM<br/>(Ollama)"}:::tool
-        end
-        
-        %% Refiner Phase
-        subgraph P3 [Phase 3: Refinement]
-            Refiner("Refiner Agent<br/>(Rewrite & Polish)"):::agent
-            LLM3{"Local LLM<br/>(Ollama)"}:::tool
-        end
+    %% 1. User Interaction Layer
+    subgraph UI_Layer [💻 User Interface]
+        User([User]):::user
+        Input{Research Topic}:::user
     end
-    
-    Report["📄 Final Report<br/>(HTML/Markdown)"]:::output
 
-    %% Connections
-    User --> Generator
+    %% 2. Agent Orchestration Layer
+    subgraph Agent_Orchestration [🤖 Agent Workflow Pipeline]
+        direction TB
+        Generator(<b>Generator Agent</b><br/>Plan, Search & Draft):::agent
+        Critic(<b>Critic Agent</b><br/>Review & Feedback):::agent
+        Refiner(<b>Refiner Agent</b><br/>Rewrite & Polish):::agent
+    end
+
+    %% 3. Tools & Infrastructure Layer
+    subgraph Tools_Infra [🛠️ Tools & Output]
+        Tavily[🔍 Search Tool<br/>Tavily / MCP]:::tool
+        Report[📄 Final Report<br/>HTML/Markdown]:::file
+    end
+
+    %% 4. AI Model Layer (Ollama)
+    subgraph Ollama_Service [🦙 Ollama Local Infra]
+        LLM[[Local LLM]]:::ai
+    end
+
+    %% Flow Definitions
     
-    Generator <--> SearchTool
-    Generator <--> LLM1
+    %% User Input Flow
+    User --> Input
+    Input -- "Initiate Task" --> Generator
+
+    %% Phase 1: Generation
+    Generator -- "1. Search Query" --> Tavily
+    Tavily -- "Search Results" --> Generator
+    Generator -- "Draft Content" --> LLM
+    LLM -.-> Generator
     Generator -- "Initial Draft" --> Critic
-    
-    Critic <--> LLM2
-    Critic -- "Critique Feedback" --> Refiner
-    
-    Refiner <--> LLM3
-    Refiner --> Report
+
+    %% Phase 2: Critique
+    Critic -- "Review Draft" --> LLM
+    LLM -.-> Critic
+    Critic -- "Critique & Feedback" --> Refiner
+
+    %% Phase 3: Refinement
+    Refiner -- "Refine Content" --> LLM
+    LLM -.-> Refiner
+    Refiner -- "Finalized Content" --> Report
+
+    %% Optional Memory Optimization Note
+    note_opt[⚡ Automatic Memory Management]
+    Ollama_Service -.- note_opt
 ```
 
 ## 📁 Project Structure
